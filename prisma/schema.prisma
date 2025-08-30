@@ -1,0 +1,228 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String       @id @default(uuid())
+  email       String       @unique
+  createdAt   DateTime     @default(now())
+  timezone    String?      // User's timezone
+  language    String       @default("en")  // Preferred language
+  theme       String       @default("light") // UI theme preference
+  flags       Flag[]
+  collection  Collection[] // Permanent items
+  profile     Profile?
+  characters  Character[]
+  worlds      World[]
+  achievements Achievement[] // User's earned achievements
+  worldRatings WorldRating[] // User's world ratings
+  activities  UserActivity[] // User's activity log
+}
+
+model Profile {
+  userId      String   @id
+  displayName String?
+  avatarUrl   String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Character {
+  id             String   @id @default(uuid())
+  userId         String
+  name           String   @db.VarChar(100)  // Limit name length
+  background     String?  @db.Text          // Allow longer text for background
+  avatarUrl      String?  // Character portrait/avatar
+  color          String?  // Character theme color
+  str            Int      @default(3) @db.SmallInt
+  wis            Int      @default(7) @db.SmallInt
+  agi            Int      @default(4) @db.SmallInt
+  cha            Int      @default(6) @db.SmallInt
+  level          Int      @default(1) @db.SmallInt
+  experience     Int      @default(0) @db.SmallInt
+  isActive       Boolean  @default(true)  // Is character available?
+  lastPlayedAt   DateTime? // When was character last used?
+  totalPlayTime  Int      @default(0)     // Total time across all runs
+  deletedAt      DateTime? // Soft delete timestamp
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now())
+  runs           Run[]
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])  // Each user can have unique character names
+  @@map("characters")       // Avoid reserved keyword
+}
+
+model Collection {
+  id        String   @id @default(uuid())
+  userId    String
+  itemName  String
+  qty       Int      @default(1)
+  meta      Json     @default("{}") // Item metadata: { rarity: "rare", condition: "new", enchantments: [] }
+  deletedAt DateTime? // Soft delete timestamp
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemName])  // One entry per item per user
+}
+
+model Flag {
+  id     String  @id @default(uuid())
+  userId String
+  key    String
+  value  Boolean @default(false)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+}
+
+model Run {
+  id                  String      @id @default(uuid())
+  characterId         String      // Which character is playing
+  worldId             String?     // Reference to the world being played
+  currentChapter      Int         @default(1)
+  currentBeat         String      @default("prologue")
+  totalChapters       Int         @default(1)  // Total chapters in this world
+  progress            Float       @default(0.0) // Progress percentage (0.0 to 1.0)
+  difficulty          String?     // Difficulty level for this run
+  state               Json        @default("{}") // Player state: { health: 100, mana: 50, quests: [], location: "town" }
+  startedAt           DateTime    @default(now())  // When run was started
+  playTime            Int?        // Total play time in minutes
+  lastPlayedAt        DateTime?   // When player last interacted with this run
+  updatedAt           DateTime    @default(now())
+  conversationHistory Json        @default("[]") // Chat history: [{ role: "user", content: "I explore the cave", timestamp: "..." }]
+  worldState          Json        @default("{}") // World state: { npcs: { merchant: "friendly" }, locations: { cave: "explored" }, events: [] }
+  tempInventory       Json        @default("[]") // Temporary items: [{ name: "gold", qty: 50 }, { name: "sword", qty: 1 }]
+  isCompleted         Boolean     @default(false) // Has this character completed this world before?
+  completedAt         DateTime?   // When was it first completed?
+  deletedAt           DateTime?   // Soft delete timestamp
+  events              EventLog[]
+  gameSession        GameSession? // Associated game session
+  character           Character   @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  world               World?      @relation(fields: [worldId], references: [id])
+
+  @@index([characterId, worldId])  // For finding character's runs in a world
+  @@index([worldId, isCompleted])  // For finding completed runs in a world
+  @@index([characterId, isCompleted])  // For finding character's completed runs
+}
+
+model EventLog {
+  id            String   @id @default(uuid())
+  runId         String
+  createdAt     DateTime @default(now())
+  chapter       Int
+  input         String
+  metadata      Json    // Event metadata: { action: "explore", target: "cave", result: "found treasure" }
+  stateSnapshot Json    // Game state at time of event: { player: { health: 100 }, world: { cave: "explored" } }
+  run           Run     @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId, createdAt])
+  @@index([runId, chapter])  // For finding events by chapter
+}
+
+model World {
+  id                String       @id @default(uuid())
+  worldType         String
+  storyTone         String
+  difficulty        String
+  name              String       @db.VarChar(200)  // World name/title
+  description       String?      @db.Text          // World description
+  creatorId         String?      // Who created this world
+  tags              String[]     // Categories: ["fantasy", "adventure", "mystery"]
+  estimatedPlayTime Int?         // Estimated completion time in minutes
+  version           String       @default("1.0.0")  // World version
+  isActive          Boolean      @default(true)     // Is this world available?
+  publishedAt       DateTime?    // When was it made public?
+  storyFrame        Json         // Story structure: { chapters: [{ title: "Chapter 1", scenes: [] }], npcs: [], items: [] }
+  isPublic          Boolean      @default(false)  // Whether this world can be shared
+  deletedAt         DateTime?    // Soft delete timestamp
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @default(now())
+  runs              Run[]        // All runs using this world
+  ratings           WorldRating[] // User ratings for this world
+  templateId        String?      // Reference to world template if created from one
+  template          WorldTemplate? @relation(fields: [templateId], references: [id])
+  creator           User?        @relation(fields: [creatorId], references: [id])
+}
+
+model WorldTemplate {
+  id          String   @id @default(uuid())
+  name        String   // "Fantasy Adventure", "Sci-Fi Mystery", etc.
+  description String?  // Template description
+  worldType   String   // "fantasy", "scifi", "mystery"
+  storyTone   String   // "epic", "dark", "humorous"
+  difficulty  String   // "easy", "medium", "hard"
+  storyFrame  Json     // Template story structure: { chapters: [], npcs: [], items: [], locations: [] }
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+  worlds      World[]  // Worlds created from this template
+}
+
+model ItemDefinition {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String
+  type        String   // "weapon", "armor", "consumable", "quest", "treasure"
+  rarity      String   // "common", "rare", "epic", "legendary"
+  stats       Json     // Item stats: { attack: 10, defense: 5, healing: 20, weight: 2.5 }
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+}
+
+model Achievement {
+  id          String   @id @default(uuid())
+  userId      String
+  type        String   // "world_completed", "character_created", "play_time", "items_collected"
+  title       String   // "World Explorer", "Character Creator", "Time Traveler"
+  description String   // "Complete your first world", "Create 3 characters"
+  metadata    Json     // Achievement metadata: { worldId: "123", completionTime: 120, difficulty: "hard" }
+  earnedAt    DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])  // For finding user's achievements by type
+  @@index([type, earnedAt])  // For finding recent achievements of a type
+}
+
+model WorldRating {
+  id          String   @id @default(uuid())
+  worldId     String
+  userId      String
+  rating      Int      // 1-5 stars
+  review      String?
+  createdAt   DateTime @default(now())
+  world       World    @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([worldId, userId]) // One rating per user per world
+  @@index([worldId, rating])  // For finding world ratings
+}
+
+model UserActivity {
+  id          String   @id @default(uuid())
+  userId      String
+  type        String   // "login", "character_created", "world_started", "world_completed", "achievement_earned"
+  metadata    Json     // Activity metadata: { worldId: "123", characterId: "456", duration: 30 }
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])  // For finding user activities by type
+  @@index([userId, createdAt])  // For finding user's recent activities
+}
+
+model GameSession {
+  id          String   @id @default(uuid())
+  runId       String   @unique
+  startedAt   DateTime @default(now())
+  endedAt     DateTime?
+  duration    Int?     // Session duration in minutes
+  actions     Int      @default(0) // Number of actions taken
+  run         Run      @relation(fields: [runId], references: [id], onDelete: Cascade)
+}
