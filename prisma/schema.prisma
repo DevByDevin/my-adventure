@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String                    @id @default(uuid())
+  email       String                    @unique
+  createdAt   DateTime                  @default(now())
+  language    String                    @default("en")
+  theme       String                    @default("light")
+  timezone    String?
+  lastLoginAt DateTime?
+  preferences Preference?
+  profile     Profile?
+  characters  Character[]
+  collection  LegendaryItemCollection[]
+  sessions    PlayerSession[]
+  ownedWorlds World[]                   @relation("WorldOwner")
+}
+
+model Preference {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  layout              String?  @default("comfortable")
+  fontSize            String?  @default("medium")
+  contrast            String?  @default("normal")
+  animations          String?  @default("enabled")
+  preferredDifficulty String?  @default("medium")
+  gameSpeed           String?  @default("normal")
+  autoSaveInterval    Int?     @default(10)
+  showHints           String?  @default("sometimes")
+  contentFilter       String?  @default("family")
+  violenceLevel       String?  @default("mild")
+  profanityFilter     Boolean? @default(true)
+  preferredGenres     String[] @default([])
+  onlineStatus        String?  @default("visible")
+  friendRequests      String?  @default("approve_manually")
+  dataSharing         String?  @default("basic")
+  notifications       Json?    @default("{\"push\": false, \"email\": true, \"inApp\": true}")
+  subtitles           Boolean? @default(false)
+  subtitleLanguage    String?  @default("auto")
+  keyboardShortcuts   Boolean? @default(true)
+  graphicsQuality     String?  @default("medium")
+  frameRateLimit      String?  @default("60")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Profile {
+  userId    String   @id
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Character {
+  id            String          @id @default(uuid())
+  userId        String
+  name          String          @db.VarChar(100)
+  background    String?
+  avatarUrl     String?
+  color         String?
+  attributes    Json?           @default("{\"agi\": 4, \"cha\": 6, \"str\": 3, \"wis\": 7}")
+  progression   Json?           @default("{\"level\": 1, \"experience\": 0}")
+  status        String          @default("active")
+  lastPlayedAt  DateTime?
+  totalPlayTime Int             @default(0)
+  deletedAt     DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions      PlayerSession[]
+
+  @@unique([userId, name])
+  @@map("characters")
+}
+
+model World {
+  id                  String               @id @default(uuid())
+  name                String               @unique @db.VarChar(100)
+  description         String?
+  worldConfig         Json?                @default("{\"type\": \"adventure\", \"theme\": \"fantasy\"}")
+  statusConfig        Json?                @default("{\"status\": \"active\", \"isPublic\": true, \"isFeatured\": false}")
+  gameSettings        Json?                @default("{\"difficulty\": \"medium\", \"maxPlayers\": 100, \"currentPlayers\": 0}")
+  aiConfig            Json?                @default("{\"model\": \"gpt-4\", \"storyStyle\": \"immersive\", \"contentRating\": \"family\"}")
+  storyFrames         Json?                @default("[]")
+  keyLocations        Json?                @default("[]")
+  keyNpcs             Json?                @default("[]")
+  totalPlayTime       Int                  @default(0)
+  totalSessions       Int                  @default(0)
+  averageRating       Float                @default(0.0)
+  ownerId             String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  lastActiveAt        DateTime?
+  sessions            PlayerSession[]
+  worldLegendaryItems WorldLegendaryItem[]
+  owner               User?                @relation("WorldOwner", fields: [ownerId], references: [id])
+
+  @@map("worlds")
+}
+
+model WorldLegendaryItem {
+  id          String                    @id @default(uuid())
+  worldId     String?
+  itemId      String
+  name        String
+  type        String
+  stats       Json?
+  description String?
+  collections LegendaryItemCollection[]
+  world       World?                    @relation(fields: [worldId], references: [id])
+
+  @@unique([worldId, itemId])
+  @@map("world_legendary_items")
+}
+
+model PlayerSession {
+  id              String    @id @default(uuid())
+  userId          String
+  worldId         String
+  characterId     String
+  startTime       DateTime  @default(now())
+  endTime         DateTime?
+  playTime        Int       @default(0)
+  sessionData     Json?     @default("{}")
+  characterStatus Json?     @default("{\"maxHp\": 100, \"maxMp\": 50, \"currentHp\": 100, \"currentMp\": 50, \"maxStamina\": 100, \"currentStamina\": 100}")
+  inventory       Json?     @default("[]")
+  interactionLog  Json?     @default("[]")
+  character       Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  world           World     @relation(fields: [worldId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, worldId, characterId])
+  @@map("player_sessions")
+}
+
+model LegendaryItemCollection {
+  id                   String             @id @default(uuid())
+  userId               String
+  worldLegendaryItemId String
+  collectedAt          DateTime           @default(now())
+  collectionNote       String?
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  legendaryItem        WorldLegendaryItem @relation(fields: [worldLegendaryItemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, worldLegendaryItemId])
+  @@map("legendary_item_collections")
+}

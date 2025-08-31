@@ -1,103 +1,134 @@
-import Image from "next/image";
+'use client';
+
+import { useAuth } from '@/hooks/auth/useAuth';
+import Link from 'next/link';
+import UserMenu from '@/components/UserMenu';
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const { user, isLoading } = useAuth();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  if (isLoading) {
+    return (
+      <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-black to-gray-900'>
+        <div className='text-center'>
+          <div className='w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4'></div>
+          <div className='text-2xl font-bold text-primary neon-glow'>
+            Loading...
+          </div>
+          <div className='text-muted mt-2'>Preparing your adventure...</div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+    );
+  }
+
+  return (
+    <div className='min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative overflow-hidden'>
+      {/* Background effects */}
+      <div className='absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,255,136,0.1),transparent_50%)]'></div>
+      <div className='absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,0,128,0.1),transparent_50%)]'></div>
+
+      <div className='relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12'>
+        <div className='text-center'>
+          <h1 className='text-6xl md:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-secondary neon-glow mb-8'>
+            My Adventure
+          </h1>
+          <p className='text-xl text-muted mb-12 max-w-2xl mx-auto'>
+            Embark on an epic journey through mysterious worlds and
+            unforgettable stories
+          </p>
+
+          {user ? (
+            <div className='space-y-8'>
+              <div className='game-card p-8 max-w-md mx-auto transform hover:scale-105 transition-transform duration-300'>
+                <h2 className='text-3xl font-bold text-primary mb-6 neon-glow'>
+                  Welcome back, Explorer!
+                </h2>
+                <p className='text-muted mb-6'>
+                  Ready to continue your journey?
+                </p>
+                <p className='text-sm text-accent mb-6'>Email: {user.email}</p>
+                <div className='space-y-4'>
+                  <Link
+                    href='/dashboard'
+                    className='game-button block w-full px-6 py-3 rounded-lg text-center font-bold'
+                  >
+                    Continue Adventure
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className='space-y-8'>
+              <div className='game-card p-8 max-w-lg mx-auto transform hover:scale-105 transition-transform duration-300'>
+                <h2 className='text-2xl font-bold text-primary mb-6 neon-glow'>
+                  Begin Your Quest
+                </h2>
+                <p className='text-muted mb-8'>
+                  Choose your path and start your legendary adventure
+                </p>
+                <div className='flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6'>
+                  <Link
+                    href='/login'
+                    className='game-button px-8 py-4 rounded-lg text-center font-bold'
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href='/register'
+                    className='game-button px-8 py-4 rounded-lg text-center font-bold'
+                    style={{
+                      background:
+                        'linear-gradient(45deg, var(--secondary), var(--accent))',
+                      borderColor: 'var(--secondary)',
+                    }}
+                  >
+                    Create Account
+                  </Link>
+                </div>
+              </div>
+
+              {/* Feature highlights */}
+              <div className='grid md:grid-cols-3 gap-6 max-w-4xl mx-auto mt-12'>
+                <div className='game-card p-6 text-center'>
+                  <div className='w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4'>
+                    <span className='text-2xl'>🎮</span>
+                  </div>
+                  <h3 className='text-lg font-bold text-primary mb-2'>
+                    Immersive Stories
+                  </h3>
+                  <p className='text-muted text-sm'>
+                    Experience rich narratives that adapt to your choices
+                  </p>
+                </div>
+
+                <div className='game-card p-6 text-center'>
+                  <div className='w-16 h-16 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-4'>
+                    <span className='text-2xl'>🌍</span>
+                  </div>
+                  <h3 className='text-lg font-bold text-secondary mb-2'>
+                    Dynamic Worlds
+                  </h3>
+                  <p className='text-muted text-sm'>
+                    Explore ever-changing environments and discover secrets
+                  </p>
+                </div>
+
+                <div className='game-card p-6 text-center'>
+                  <div className='w-16 h-16 bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-4'>
+                    <span className='text-2xl'>⚡</span>
+                  </div>
+                  <h3 className='text-lg font-bold text-accent mb-2'>
+                    Real-time AI
+                  </h3>
+                  <p className='text-muted text-sm'>
+                    Powered by advanced AI for endless possibilities
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
