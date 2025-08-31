@@ -1,0 +1,32 @@
+{
+  "editor.wordWrap": "on",
+  "editor.wordWrapColumn": 150,
+  "editor.wordWrapIndent": "indent",
+  "editor.minimap.enabled": false,
+  "editor.minimap.maxColumn": 150,
+  
+  "[prisma]": {
+    "editor.wordWrap": "on",
+    "editor.wordWrapColumn": 120
+  },
+  
+  "[typescript]": {
+    "editor.wordWrap": "on",
+    "editor.wordWrapColumn": 150
+  },
+  
+  "[typescriptreact]": {
+    "editor.wordWrap": "on",
+    "editor.wordWrapColumn": 150
+  },
+  
+  "[javascript]": {
+    "editor.wordWrap": "on",
+    "editor.wordWrapColumn": 150
+  },
+  
+  "[json]": {
+    "editor.wordWrap": "on",
+    "editor.wordWrapColumn": 150
+  }
+}
