@@ -37,8 +37,20 @@ const checkAuthStatus = async () => {
     if (response.ok && result.success && result.data) {
       return { success: true, data: result.data };
     }
+
+    // 记录详细的错误信息
+    if (response.status === 401) {
+      console.log('Authentication failed: No valid session');
+    } else if (response.status >= 400) {
+      console.log(
+        `Auth check failed with status ${response.status}:`,
+        result.message
+      );
+    }
+
     return { success: false, data: null };
   } catch (error) {
+    console.error('Auth check network error:', error);
     return { success: false, data: null };
   }
 };
@@ -169,8 +181,14 @@ export function useInitAuth() {
         const { success, data } = await checkAuthStatus();
         if (success && data) {
           updateAuthState(data, setUser, setSession);
+        } else {
+          // 如果认证检查失败，清除本地状态
+          clearAuth();
         }
       } catch (error) {
+        console.error('Auth initialization error:', error);
+        // 发生错误时清除本地状态
+        clearAuth();
       } finally {
         setLoading(false);
       }
@@ -179,11 +197,16 @@ export function useInitAuth() {
     initAuth();
 
     const authCheckInterval = setInterval(async () => {
-      const { success, data } = await checkAuthStatus();
+      try {
+        const { success, data } = await checkAuthStatus();
 
-      if (success && data) {
-        updateAuthState(data, setUser, setSession);
-      } else {
+        if (success && data) {
+          updateAuthState(data, setUser, setSession);
+        } else {
+          clearAuth();
+        }
+      } catch (error) {
+        console.error('Periodic auth check error:', error);
         clearAuth();
       }
     }, 30000);
